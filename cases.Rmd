@@ -1,0 +1,105 @@
+---
+title: "new cases"
+author: "Marisa Henry"
+date: "9/23/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(zoo)
+library(lubridate)
+library(plotMPR)
+date <- "_20210106"
+extrafont::loadfonts(device = "win", quiet = TRUE)
+df <- read_csv(paste0("data/covid19dataexport", date, ".csv"))
+names(df) <- tolower(names(df)) %>% gsub(" ", "_", .)
+df <- df %>% mutate(date_reported = ymd(date_reported))
+```
+
+```{r}
+df %>%
+  group_by(date_reported) %>%
+  count() %>%
+  arrange(date_reported) %>%
+  ungroup() %>%
+  mutate(roll_n = zoo::rollmean(n, 7, align = "right", na.pad = T)) %>%
+  ggplot()+ 
+  geom_point(
+    aes(x = date_reported, 
+        y = roll_n), 
+    color = plotMPR::mpr_cols("dark blue")
+  ) + 
+  geom_line(
+    aes(x = date_reported, 
+        y = roll_n, 
+        group = 1), 
+    color = plotMPR::mpr_cols("dark blue")
+  ) + 
+  scale_x_date(date_breaks = "month", date_labels = "%b %d") +
+  labs(x = "", y = "Rolling 7-day average new cases", title = "Alberta") + 
+  plotMPR::theme_mpr() 
+
+ggsave(paste0("output/alberta", date, ".png"))
+```
+```{r}
+df %>%
+  group_by(date_reported, alberta_health_services_zone) %>%
+  count() %>%
+  arrange(date_reported) %>%
+  ungroup() %>%
+  mutate(roll_n = zoo::rollmean(n, 7, align = "right", na.pad = T)) %>%
+  ggplot()+ 
+  geom_point(
+    aes(x = date_reported, 
+        y = roll_n, 
+        color = alberta_health_services_zone)
+  ) + 
+  geom_line(
+    aes(x = date_reported, 
+        y = roll_n, 
+        color = alberta_health_services_zone,
+        group = alberta_health_services_zone)
+  ) + 
+  scale_color_manual(values = c(mpr_cols("dark blue"), mpr_cols("light green"),
+                                mpr_cols("teal"), mpr_cols("yellow"),
+                                mpr_cols("red"), mpr_cols("grey"))) + 
+  facet_wrap(~alberta_health_services_zone) + 
+  scale_x_date(date_breaks = "month", date_labels = "%b %d") +
+  labs(x = "", y = "Rolling 7-day average new cases") + 
+  plotMPR::theme_mpr() +
+  theme(legend.position = "none")
+
+ggsave(paste0("output/zones", date, ".png"), width = 14, height = 7)
+```
+
+```{r}
+df %>%
+  filter(alberta_health_services_zone == "Calgary Zone") %>%
+  group_by(date_reported) %>%
+  count() %>%
+  arrange(date_reported) %>%
+  ungroup() %>%
+  mutate(roll_n = zoo::rollmean(n, 7, align = "right", na.pad = T)) %>%
+   ggplot()+ 
+  geom_point(
+    aes(x = date_reported, 
+        y = roll_n), 
+    color = plotMPR::mpr_cols("dark blue")
+  ) + 
+  geom_line(
+    aes(x = date_reported, 
+        y = roll_n, 
+        group = 1), 
+    color = plotMPR::mpr_cols("dark blue")
+  ) + 
+  scale_x_date(date_breaks = "month", date_labels = "%b %d") +
+  labs(x = "", y = "Rolling 7-day average new cases", title = "Calgary") + 
+  plotMPR::theme_mpr() 
+
+
+ggsave(paste0("output/calgary", date, ".png"))
+```
+
+
